@@ -14,8 +14,7 @@ class LinkedAllocation:
         for _ in range(size):
             free_index = self.find_free_block()
             if free_index == -1:
-                print("Disk is full, cannot create file")
-                return None
+                raise Exception("Disk is full, cannot create file")
             self.disk[free_index] = {'file_id': file_id, 'next': None}
             if last_index is not None:
                 self.disk[last_index]['next'] = free_index
@@ -41,17 +40,14 @@ class LinkedAllocation:
             current_index = next_index
 
     def write_file(self, start_index, additional_size):
-        # Find the last block of the file
         current_index = start_index
         while self.disk[current_index]['next'] is not None:
             current_index = self.disk[current_index]['next']
         
-        # Add new blocks
         for _ in range(additional_size):
             free_index = self.find_free_block()
             if free_index == -1:
-                print("No free blocks available, cannot expand file")
-                return False
+                raise Exception("No free blocks available, cannot expand file")
             self.disk[free_index] = {'file_id': self.disk[current_index]['file_id'], 'next': None}
             self.disk[current_index]['next'] = free_index
             current_index = free_index
