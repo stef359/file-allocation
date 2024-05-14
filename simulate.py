@@ -1,31 +1,29 @@
 import random
 from disk_management import Disk, Directory
-from contiguous_allocation import ContiguousAllocation
-from linked_allocation import LinkedAllocation
-from indexed_allocation import IndexedAllocation
 
-def select_allocation_method():
+def select_allocation_method(disk):
     print("Select an allocation method:")
     print("1: Contiguous Allocation")
     print("2: Linked Allocation")
-    print("3: Indexed Allocation")
+    print("3: Exit Selection")
     choice = input("Enter choice (1-3): ")
     if choice == '1':
-        return ContiguousAllocation(500)
+        return lambda file_name, start, length: disk.allocate(file_name, start, length)
     elif choice == '2':
-        return LinkedAllocation(500)
-    elif choice == '3':
-        return IndexedAllocation(500)
+        return lambda file_name, size: disk.allocate_randomly(file_name, size)
     else:
-        print("Invalid choice. Defaulting to Contiguous Allocation.")
-        return ContiguousAllocation(500)
+        print("Exiting allocation selection.")
+        return None
 
 def main():
     disk_size = 500
     disk = Disk(disk_size)
     directory = Directory()
-    allocation_method = select_allocation_method()
+    allocation_method = select_allocation_method(disk)
     next_free_block = 0  # For contiguous allocation
+
+    if allocation_method is None:
+        return
 
     while True:
         print("\nCommands:")
@@ -33,7 +31,6 @@ def main():
         print("2: Remove file")
         print("3: Show disk state")
         print("4: Show directory listing")
-        print("5: Perform allocation method-specific operation")
         print("0: Exit")
         command = input("Enter command number: ")
 
@@ -45,19 +42,19 @@ def main():
             base_file_name = input("Enter base file name: ")
             for i in range(num_files):
                 file_name = f"{base_file_name}{i+1}"
-                length = random.randint(1, 10)
-                if isinstance(allocation_method, ContiguousAllocation):
+                size = random.randint(1, 10)  # Random size for the file
+                if allocation_method.__code__.co_argcount == 3:  # Contiguous allocation
                     start = next_free_block
-                else:
-                    start = random.randint(0, disk_size - 1)
-
-                if disk.allocate(file_name, start, length):
-                    directory.add_file(file_name, start, length)
-                    print(f"File '{file_name}' added successfully at start block {start}.")
-                    if isinstance(allocation_method, ContiguousAllocation):
-                        next_free_block = start + length
-                else:
-                    print(f"Failed to add file '{file_name}'. Please check disk space.")
+                    if disk.allocate(file_name, start, size):
+                        directory.add_file(file_name, start, size)
+                        print(f"File '{file_name}' added successfully at start block {start}.")
+                        next_free_block = start + size
+                    else:
+                        print(f"Failed to add file '{file_name}'. Please check disk space.")
+                else:  # Random allocation
+                    indices = allocation_method(file_name, size)
+                    directory.add_file_non_contiguous(file_name, indices)
+                    print(f"File '{file_name}' added successfully across blocks: {indices}")
         elif command == '2':
             file_name = input("Enter file name to remove: ")
             if file_name in directory.entries:
@@ -72,24 +69,6 @@ def main():
         elif command == '4':
             print("Directory Listing:")
             print(directory)
-        elif command == '5':
-            print("Performing method-specific operation:")
-            file_name = input("Enter file name for method-specific operation: ")
-            size = random.randint(1, disk_size)
-            try:
-                if isinstance(allocation_method, ContiguousAllocation):
-                    result = allocation_method.create_file(file_name, size)
-                    print("File created successfully.")
-                elif isinstance(allocation_method, LinkedAllocation):
-                    start_index = allocation_method.create_file(file_name, size)
-                    print(f"File created starting at block {start_index}")
-                elif isinstance(allocation_method, IndexedAllocation):
-                    index_block = allocation_method.create_file(file_name, size)
-                    print(f"File created with index block at {index_block}")
-                else:
-                    print("Unsupported operation.")
-            except Exception as e:
-                print(f"Error: {str(e)}")
         else:
             print("Invalid command.")
 
