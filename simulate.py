@@ -66,16 +66,20 @@ def main():
             print("Performing method-specific operation:")
             file_name = input("Enter file name for method-specific operation: ")
             size = random.randint(1, disk_size)
-            if isinstance(allocation_method, ContiguousAllocation):
-                allocation_method.create_file(file_name, size)
-            elif isinstance(allocation_method, LinkedAllocation):
-                start_index = allocation_method.create_file(file_name, size)
-                print(f"File created starting at block {start_index}")
-            elif isinstance(allocation_method, IndexedAllocation):
-                index_block = allocation_method.create_file(file_name, size)
-                print(f"File created with index block at {index_block}")
-            else:
-                print("Unsupported operation.")
+            try:
+                if isinstance(allocation_method, ContiguousAllocation):
+                    result = allocation_method.create_file(file_name, size)
+                    print("File created successfully.")
+                elif isinstance(allocation_method, LinkedAllocation):
+                    start_index = allocation_method.create_file(file_name, size)
+                    print(f"File created starting at block {start_index}")
+                elif isinstance(allocation_method, IndexedAllocation):
+                    index_block = allocation_method.create_file(file_name, size)
+                    print(f"File created with index block at {index_block}")
+                else:
+                    print("Unsupported operation.")
+            except Exception as e:
+                print(f"Error: {str(e)}")
         else:
             print("Invalid command.")
 
