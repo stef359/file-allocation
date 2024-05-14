@@ -2,21 +2,21 @@ class ContiguousAllocation:
     def __init__(self, disk_size):
         self.disk = [None] * disk_size  # None represents free space
 
-    def create_file(self, file_id, size):
-        start = None
-        # Search for a contiguous block of free space
-        for i in range(len(self.disk) - size + 1):
-            if all(block is None for block in self.disk[i:i + size]):
-                start = i
-                break
+    def find_free_block(self, size):
+        # Improved search method for finding contiguous blocks
+        for start in range(len(self.disk) - size + 1):
+            if all(self.disk[i] is None for i in range(start, start + size)):
+                return start
+        return None
 
+    def create_file(self, file_id, size):
+        start = self.find_free_block(size)
         if start is not None:
             for i in range(start, start + size):
                 self.disk[i] = file_id
             return True
         else:
-            print("Not enough contiguous space to create file")
-            return False
+            raise Exception("Not enough contiguous space to create file")
 
     def read_file(self, file_id):
         file_content = []
@@ -26,23 +26,24 @@ class ContiguousAllocation:
         return file_content
 
     def delete_file(self, file_id):
+        freed = False
         for i in range(len(self.disk)):
             if self.disk[i] == file_id:
                 self.disk[i] = None
+                freed = True
+        if not freed:
+            raise Exception("File not found")
 
     def write_file(self, file_id, additional_size):
-        # Check the end position of the file
         end_pos = None
-        for i in range(len(self.disk)):
+        # Find the end position of the file
+        for i in range(len(self.disk) - 1, -1, -1):
             if self.disk[i] == file_id:
                 end_pos = i
-
-        # Try to expand the file in the contiguous space
-        if all(block is None for block in self.disk[end_pos + 1:end_pos + 1 + additional_size]):
+                break
+        if end_pos is not None and all(self.disk[i] is None for i in range(end_pos + 1, end_pos + 1 + additional_size)):
             for i in range(end_pos + 1, end_pos + 1 + additional_size):
                 self.disk[i] = file_id
+            return True
         else:
-            print("Not enough contiguous space to expand file")
-            # File needs to be moved or cannot be expanded
-            return False
-        return True
+            raise Exception("Not enough contiguous space to expand file or file does not exist")
