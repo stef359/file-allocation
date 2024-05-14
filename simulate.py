@@ -1,3 +1,4 @@
+import random
 from disk_management import Disk, Directory
 from contiguous_allocation import ContiguousAllocation
 from linked_allocation import LinkedAllocation
@@ -10,17 +11,17 @@ def select_allocation_method():
     print("3: Indexed Allocation")
     choice = input("Enter choice (1-3): ")
     if choice == '1':
-        return ContiguousAllocation(100)  # Assuming 100 blocks for simplicity
+        return ContiguousAllocation(500)
     elif choice == '2':
-        return LinkedAllocation(100)
+        return LinkedAllocation(500)
     elif choice == '3':
-        return IndexedAllocation(100)
+        return IndexedAllocation(500)
     else:
         print("Invalid choice. Defaulting to Contiguous Allocation.")
-        return ContiguousAllocation(100)
+        return ContiguousAllocation(500)
 
 def main():
-    disk_size = 32  # Adjust based on your disk size requirements
+    disk_size = 500
     disk = Disk(disk_size)
     directory = Directory()
     allocation_method = select_allocation_method()
@@ -41,7 +42,7 @@ def main():
         elif command == '1':
             file_name = input("Enter file name: ")
             start = int(input("Enter start block: "))
-            length = int(input("Enter length of the file: "))
+            length = random.randint(1, 55)
             if disk.allocate(file_name, start, length):
                 directory.add_file(file_name, start, length)
                 print(f"File '{file_name}' added successfully.")
@@ -63,9 +64,8 @@ def main():
             print(directory)
         elif command == '5':
             print("Performing method-specific operation:")
-            # Example: Create a file using the selected allocation method
             file_name = input("Enter file name for method-specific operation: ")
-            size = int(input("Enter the size of the file in blocks: "))
+            size = random.randint(1, disk_size)
             if isinstance(allocation_method, ContiguousAllocation):
                 allocation_method.create_file(file_name, size)
             elif isinstance(allocation_method, LinkedAllocation):
