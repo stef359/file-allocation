@@ -14,14 +14,16 @@ class Disk:
         return False
 
     def allocate_randomly(self, file_name, size):
-        # Allocate blocks in a non-contiguous manner.
+        # Allocate blocks in a non-contiguous manner and record the next block index.
         indices = []
         for _ in range(size):
             if all(block is not None for block in self.blocks):
                 raise Exception("Disk is full, cannot allocate more files.")
             index = random.choice([i for i, block in enumerate(self.blocks) if block is None])
-            self.blocks[index] = file_name
+            self.blocks[index] = (file_name, -1)
             indices.append(index)
+        for i in range(len(indices) - 1):
+            self.blocks[indices[i]] = (indices[i], file_name, indices[i + 1])
         return indices
 
     def deallocate(self, file_name):
