@@ -25,6 +25,7 @@ def main():
     disk = Disk(disk_size)
     directory = Directory()
     allocation_method = select_allocation_method()
+    next_free_block = 0  # For contiguous allocation
 
     while True:
         print("\nCommands:")
@@ -40,14 +41,23 @@ def main():
             print("Exiting simulator.")
             break
         elif command == '1':
-            file_name = input("Enter file name: ")
-            start = int(input("Enter start block: "))
-            length = random.randint(1, 55)
-            if disk.allocate(file_name, start, length):
-                directory.add_file(file_name, start, length)
-                print(f"File '{file_name}' added successfully.")
-            else:
-                print("Failed to add file. Please check disk space.")
+            num_files = int(input("How many files do you want to add? "))
+            base_file_name = input("Enter base file name: ")
+            for i in range(num_files):
+                file_name = f"{base_file_name}{i+1}"
+                length = random.randint(1, 10)
+                if isinstance(allocation_method, ContiguousAllocation):
+                    start = next_free_block
+                else:
+                    start = random.randint(0, disk_size - 1)
+
+                if disk.allocate(file_name, start, length):
+                    directory.add_file(file_name, start, length)
+                    print(f"File '{file_name}' added successfully at start block {start}.")
+                    if isinstance(allocation_method, ContiguousAllocation):
+                        next_free_block = start + length
+                else:
+                    print(f"Failed to add file '{file_name}'. Please check disk space.")
         elif command == '2':
             file_name = input("Enter file name to remove: ")
             if file_name in directory.entries:

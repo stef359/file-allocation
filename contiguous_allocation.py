@@ -1,19 +1,21 @@
 class ContiguousAllocation:
     def __init__(self, disk_size):
-        self.disk = [None] * disk_size  # None represents free space
+        self.disk = [None] * disk_size
+        self.last_used_block = -1  # Initialize to -1 to indicate no blocks used yet.
 
-    def find_free_block(self, size):
-        # Improved search method for finding contiguous blocks
-        for start in range(len(self.disk) - size + 1):
+    def find_next_free_block(self, size):
+        # Start searching from the last used block
+        for start in range(self.last_used_block + 1, len(self.disk) - size + 1):
             if all(self.disk[i] is None for i in range(start, start + size)):
                 return start
         return None
 
     def create_file(self, file_id, size):
-        start = self.find_free_block(size)
+        start = self.find_next_free_block(size)
         if start is not None:
             for i in range(start, start + size):
                 self.disk[i] = file_id
+            self.last_used_block = start + size - 1
             return True
         else:
             raise Exception("Not enough contiguous space to create file")
