@@ -11,41 +11,47 @@ class IndexedAllocation:
     def create_file(self, file_id, size):
         index_block_index = self.find_free_block()
         if index_block_index == -1:
-            print("No space to create index block")
-            return None
+            raise Exception("No space to create index block")
         
         self.disk[index_block_index] = {'file_id': file_id, 'type': 'index', 'blocks': []}
-        for _ in range(size):
-            block_index = self.find_free_block()
-            if block_index == -1:
-                print("Disk is full, not all blocks could be allocated")
-                return index_block_index  # Partial file created
-            self.disk[block_index] = {'file_id': file_id, 'type': 'data', 'content': 'data'}
-            self.disk[index_block_index]['blocks'].append(block_index)
-        return index_block_index
-
-    def read_file(self, index_block_index):
-        if self.disk[index_block_index] is None or self.disk[index_block_index]['type'] != 'index':
-            return "Invalid index block"
-        file_content = []
-        for block_index in self.disk[index_block_index]['blocks']:
-            file_content.append(self.disk[block_index]['content'])
-        return file_content
-
-    def delete_file(self, index_block_index):
-        if self.disk[index_block_index] and self.disk[index_block_index]['type'] == 'index':
+        try:
+            for _ in range(size):
+                block_index = self.find_free_block()
+                if block_index == -1:
+                    raise Exception("Disk is full, not all blocks could be allocated")
+                self.disk[block_index] = {'file_id': file_id, 'type': 'data', 'content': 'data'}
+                self.disk[index_block_index]['blocks'].append(block_index)
+        except Exception as e:
+            # Cleanup any partial allocation if error occurs
             for block_index in self.disk[index_block_index]['blocks']:
                 self.disk[block_index] = None
             self.disk[index_block_index] = None
+            raise e  # Re-raise the exception to inform the caller
+        return index_block_index
+
+    def read_file(self, index_block_index):
+        index_block = self.disk[index_block_index]
+        if index_block is None or index_block['type'] != 'index':
+            raise Exception("Invalid index block")
+        return [self.disk[block_index]['content'] for block_index in index_block['blocks']]
+
+    def delete_file(self, index_block_index):
+        index_block = self.disk[index_block_index]
+        if index_block and index_block['type'] == 'index':
+            for block_index in index_block['blocks']:
+                self.disk[block_index] = None
+            self.disk[index_block_index] = None
+        else:
+            raise Exception("Invalid index block or block already deleted")
 
     def write_file(self, index_block_index, additional_data):
-        if self.disk[index_block_index] is None or self.disk[index_block_index]['type'] != 'index':
-            return "Invalid index block"
+        index_block = self.disk[index_block_index]
+        if index_block is None or index_block['type'] != 'index':
+            raise Exception("Invalid index block")
         for data in additional_data:
             block_index = self.find_free_block()
             if block_index == -1:
-                print("No space available to expand file")
-                return False
-            self.disk[block_index] = {'file_id': self.disk[index_block_index]['file_id'], 'type': 'data', 'content': data}
-            self.disk[index_block_index]['blocks'].append(block_index)
+                raise Exception("No space available to expand file")
+            self.disk[block_index] = {'file_id': index_block['file_id'], 'type': 'data', 'content': data}
+            index_block['blocks'].append(block_index)
         return True
